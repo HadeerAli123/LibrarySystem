@@ -71,8 +71,13 @@ class BookController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Book $book)
+ public function destroy( Request $request ,Book $book)
     {
-        //
+          if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Only admins can update books'], 403);
+        }
+        $book->delete();
+        return response()->json(['message' => 'Book deleted']);
     }
 }
+
