@@ -12,8 +12,9 @@ class Book extends Model
         'isbn',
         'publication_date',
         'available',
+        'added_by_user_id',
     ];
-    
+
     protected $casts = [
         'publication_date' => 'date',
         'available' => 'boolean',
@@ -23,4 +24,8 @@ class Book extends Model
 {
     return $this->hasMany(BorrowedBook::class);
 }
+public function addedByUser()
+    {
+        return $this->belongsTo(User::class, 'added_by_user_id');
+    }
 }
