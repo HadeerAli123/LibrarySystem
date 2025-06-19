@@ -9,52 +9,76 @@ use App\Http\Resources\BookResource;
 
 class BookController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-   public function index()
+    public function index()
     {
-        $books = Book::with('addedByUser')->get(); 
-        return response()->json($books);
-    }
-    /**
-     * Store a newly created resource in storage.
-     */
- public function store(Request $request)
-    {
-        if ($request->user()->role !== 'admin') {
-            return response()->json(['message' => 'Only admins can add books'], 403);
+        try {
+            $books = Book::with('addedByUser')->get();
+            return response()->json($books);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching books: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to fetch books',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'author' => 'required|string|max:255',
-            'isbn' => 'required|string|unique:books|max:13',
-            'publication_date' => 'required|date',
-        ]);
-
-        $book = Book::create(array_merge($request->all(), [
-            'added_by_user_id' => $request->user()->id,
-        ]));
-
-        return response()->json($book, 201); 
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Book $book)
+    public function store(Request $request)
     {
+        try {
+            if ($request->user()->role !== 'admin') {
+                return response()->json(['message' => 'Only admins can add books'], 403);
+            }
+
+            $request->validate([
+                'title' => 'required|string|max:255',
+                'author' => 'required|string|max:255',
+                'isbn' => 'required|string|unique:books,isbn|max:13',
+                'publication_date' => 'required|date',
+            ]);
+
+            $book = Book::create(array_merge($request->all(), [
+                'added_by_user_id' => $request->user()->id,
+            ]));
+
+            return response()->json($book, 201);
+        } catch (\Exception $e) {
+            \Log::error('Error creating book: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to create book',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+public function show($id)
+{
+    $book = Book::find($id); 
+    if (!$book) {
+        return response()->json(['message' => 'Book not found'], 404);
+    }
+
+    try {
         return new BookResource($book->load('addedByUser'));
+    } catch (\Exception $e) {
+        \Log::error('Error fetching book: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Failed to fetch book',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
-    /**
-     * Update the specified resource in storage.
-     */
-   public function update(Request $request, Book $book)
-    {
+   public function update(Request $request, $id)
+{
+    try {
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Only admins can update books'], 403);
+        }
+
+        $book = Book::find($id);
+        if (!$book) {
+            return response()->json(['message' => 'Book not found'], 404);
         }
 
         $request->validate([
@@ -66,18 +90,35 @@ class BookController extends Controller
 
         $book->update($request->all());
         return response()->json($book);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
- public function destroy( Request $request ,Book $book)
-    {
-          if ($request->user()->role !== 'admin') {
-            return response()->json(['message' => 'Only admins can update books'], 403);
-        }
-        $book->delete();
-        return response()->json(['message' => 'Book deleted']);
+    } catch (\Exception $e) {
+        \Log::error('Error updating book: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Failed to update book',
+            'error' => $e->getMessage()
+        ], 500);
     }
 }
 
+   public function destroy(Request $request, $id)
+{
+    try {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Only admins can delete books'], 403);
+        }
+
+        $book = Book::find($id); 
+        if (!$book) {
+            return response()->json(['message' => 'Book not found'], 404);
+        }
+
+        $book->delete();
+        return response()->json(['message' => 'Book deleted']);
+    } catch (\Exception $e) {
+        \Log::error('Error deleting book: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Failed to delete book',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+}

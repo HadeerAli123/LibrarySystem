@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class BorrowBook extends Model
+class BorrowedBook extends Model
 {
    protected $fillable = [
         'user_id',

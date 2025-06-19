@@ -1,6 +1,7 @@
 <?php
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\BookController;
+use App\Http\Controllers\API\BorrowedBookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,3 +17,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::get('/books', [BookController::class, 'index']);
 Route::get('/books/{book}', [BookController::class, 'show']);
+Route::middleware('auth:sanctum')->group(function(){
+Route::apiResource('borrowed-books',BorrowedBookController::class);
+});
+Route::get('/my-borrowed-books', [BorrowedBookController::class, 'myBorrowedBooks'])->middleware('auth:sanctum');
